@@ -1,0 +1,25 @@
+= Oracle Study
+:doctype: book
+:icons: font
+:source-highlighter: highlightjs
+:toc: left
+:toclevels: 3
+:sectlinks:
+
+REFR::
+link:https://www.youtube.com/watch?v=aDTiSKcMtoc&list=PLq8wAnVUcTFVq7RD1kuUwkdWabxvDGzfu&index=2[newlecture]
+
+Access Program::
+. SQL Plus :
+.. ID : sys as sysdba
+.. PW : [PW]
+
+. SQL Developer
+
+
+== Pluggable
+
+=== PDB
+
+
+
