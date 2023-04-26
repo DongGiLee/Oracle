@@ -6,6 +6,8 @@
 :toclevels: 3
 :sectlinks:
 
+- - -
+
 REFR::
 link:https://www.youtube.com/watch?v=aDTiSKcMtoc&list=PLq8wAnVUcTFVq7RD1kuUwkdWabxvDGzfu&index=2[newlecture]
 
@@ -167,6 +169,8 @@ XEPDB1:: SEED로 생성한 실제 PDB의 이름 (현재이름, 가변적),
 SELECT name FROM v$pdbs;
 ----
 
+DUAL Table::
+값을 뽑아내야하지만 구문상 Table을 조회해야할경우 사용할수있는 임시 테이블, 더미테이블이다.
 
 
 == Query
@@ -226,15 +230,63 @@ ALTER TABLE MEMBER ADD EMAIL VARCHAR2(200);
 ==== DROP
 
 === DML
-    Data Manipulation  Language
+    Data Manipulation Language
     데이터 조작어
 
 ==== INSERT
-==== SELECT
-==== UPDATE
-==== DELETE
 
-==== SELECT 
+명령 규칙::
+
++
+
+[source,sql]
+.기본
+----
+INSERT INTO <테이블> VALUES <값 목록>
+----
+
++
+
+[source,sql]
+.원하는 필드만 입력
+----
+INSERT INTO(col1,col2) VALUES(val1, val2);
+----
+
+IMPORTANT: VALUES 안에 데이터를 넣을때 `""`(쌍 따옴표) 가 아닌 `''` (따옴표) 를 넣어야한다.
+
+==== SELECT
+
+==== UPDATE
+명령규칙::
+
++
+
+[source,sql]
+.모든행 수정
+----
+UPDATE <테이블> SET col=new_val;
+----
+
++
+
+[source,sql]
+.특정행 수정
+----
+UPDATE <테이블> SET col=new_val [, ...] WHERE col=origin_val;
+----
+
+
+==== DELETE
+명령규칙::
+
++
+
+[source,sql]
+.특정행 삭제
+----
+DELETE <테이블> WHERE col=val;
+----
 
 === DCL
     Data Control Language
@@ -245,10 +297,22 @@ ALTER TABLE MEMBER ADD EMAIL VARCHAR2(200);
 
 === TCL
     Transaction Control Language
-    트랜젝션; 논리적인 실행 (작업 수행) 단위
+    트랜젝션; 업무 실행단위, 논리적인 실행 (작업 수행) 단위
+
+
+
+Oracle은 모든수행이 기본적으로 임시저장소로 가게된다. +
+그래서 한 Session에서 `INSERT`, `DELETE`, `UPDATE` 등 수행해도 다른 Session에서 `SELECT` 을 해도 변경된값이 조회가 안되는게 그이유에서 이다. +
+
+그래서 마지막에 `COMMIT` 을 해야지 물리적인 저장소로 이동을하게된다.
+
+LOCK::
+현재 `COMMIT` , `ROLLBACK` 을 하기전 다른 Session 에서 사용중이라면 `LOCK` 이걸려서 데이터를 조작할수없다.
 
 ==== COMMIT
+
 ==== ROLLBACK
+
 ==== SAVEPOINT
 
 
@@ -341,6 +405,9 @@ NLS_TIMESTAMP_TZ_FORMAT 파라미터에 명시된 값을 따름
 ==== TIMESTAMP WITH LOCAL TIME ZONE
 NLS_TIMESTAMP_FORMAT 파라미터에 명시된 값을 따름.
 
+
+'2013-06-03 10.38.29.00000'
+
 === LOB
 
 ==== LONG
@@ -354,10 +421,124 @@ CLOB가 대체됨
 ==== NCLOB
 대용량 텍스트 유니코드 데이터 타입 (최대 4Gbyte)
 
-'2013-06-03 10.38.29.00000'
 
+== Operator
 
-=== CURRENT SCHEMA
+=== Arithmetic
+
+==== `+`
+다른 DBMS에서는 `+` 를 문자형이나 숫자형 둘다 사용가능하지만 Oracle에서는 숫자형에서만 사용할수있다.
+
+Ex)::
+
++
+
+[source,sql]
+.숫자형 , 문자형
+----
+SELECT 1 + '4' FROM DUAL;
+----
+
++
+
+[source,sql]
+.result
+----
+5
+----
+
++
+
+다른 DBMS에서는 저값이 `"14"` 로(문자형) 나오지만 Oracle은 숫자형에서 밖에 `+` 를 사용하지않기때문에 숫자형으로 변환되어 나온다.
+
+==== `||`
+문자열 더하기 연산자
+
+Ex)::
+
++
+
+[source,sql]
+.숫자형 , 문자형
+----
+SELECT 1 || '5' FROM DUAL;
+----
+
++
+
+[source,sql]
+.result
+----
+"15"
+----
+
+=== Comparison
+
+==== `!=` `^=` `<>`
+같지 않을때 사용 +
+`!=` 다른곳에서 다들 사용하기때문에 Oracle에서 사용한다. +
+`^=` Oracle용 연산자 +
+`<>` 표준 연산자
+
+=== Relational
+
+==== BETWEEN
+EX)::
+조회수가 0,1,2 인 게시글을 조회하시오.
+
++
+
+[source,sql]
+.AND 버전
+----
+SELECT * FROM NOTICE WHERE 0<= HIT AND HIT <=2;
+----
+
++
+
+[source,sql]
+.BETWEEN 버전
+----
+SELECT * FROM NOTICE WHERE HIT BETWEEN 0 AND 2;
+----
+
+==== IN
+
+EX)::
+조회수가 0,2,7 인 게시글을 조회하시오.
+
++
+
+[source,sql]
+.OR 버전
+----
+SELECT * FROM NOTICE WHERE HIT=0 OR HIT=2 OR HIT=7;
+----
+
++
+
+[source,sql]
+.IN 버전
+----
+SELECT * FROM NOTICE WHERE HIT IN (0,2,7);
+----
+
+=== Pattern
+
+==== LIKE
+
+==== `%`
+Ex)::
+회원중에 '박'씨 성을 조회하시오.
++
+
+[source,sql]
+----
+SELECT * FROM MEMBER WHERE NAME='박%' ;
+----
+==== `_`
+
+== CURRENT SCHEMA
 
 [source,sql]
 .MEMBER
@@ -377,7 +558,7 @@ CREATE TABLE "MEMBER"
 [source,sql]
 .NOTICE
 ----
-CREATE TABLE NOTICE (
+CREATE TABLE "NOTICE" (
     ID          NUMBER,
     TITLE       NVARCHAR2(100),
     WRITER_ID   NVARCHAR2(50),
@@ -391,7 +572,7 @@ CREATE TABLE NOTICE (
 [source,sql]
 .COMMENT
 ----
-CREATE TABLE COMMENT (
+CREATE TABLE "COMMENT" (
     ID          NUMBER,
     CONTENT     NVARCHAR2(50),
     REGDATE     TIMESTAMP,
@@ -402,7 +583,7 @@ CREATE TABLE COMMENT (
 [source,sql]
 .ROLE
 ----
-CREATE TABLE ROLE(
+CREATE TABLE "ROLE"(
     ID          VARCHAR2(50),
     DISCRIPTION NVARCHAR2(500)
 );
@@ -410,7 +591,7 @@ CREATE TABLE ROLE(
 [source,sql]
 .MEMBER_ROLE
 ----
-CREATE TABLE ROLE(
+CREATE TABLE MEMBER_ROLE(
     MEMBER_ID   NVARCHAR2(50),
     ROLE_ID     VARCHAR2(50)
 );
