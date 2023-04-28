@@ -175,6 +175,10 @@ DUAL Table::
 
 == Query
 
+NOTE: **실행순서** +
+[#PROCESS]
+FROM -> CONNECT BY -> WHERE -> GROUP BY -> HAVING -> SELECT -> ORDER BY
+
 === DDL
     Data Definition Language
     데이터 정의어
@@ -320,6 +324,11 @@ LOCK::
 ==== ROWNUM
 결과를 만들고나서 Auto Increment 처럼 1부터 자동으로 증가된 값이 생성되는 컬럼이다. +
 필드의 값이 처음부터 실존하는 값이 아닌 결과로부터 만들어지는 가변적인 값이다.
+
+IMPORTANT: 상세하게 보면 결과로부터 만들어지는것보다 `WHERE` 절 즈음에 생성된다. <<PROCESS>> +
+그래서 ROWNUM을 시점이 `ORDER BY` 넣게되면 실행순서가 `ORDER BY` 가 더 뒤에있기때문에 +
+순차적으로 생성되고나서 다시 정렬하는거라 순서가 꼬일수가있다. + 
+그래서 `ORDER BY` 가 정상적으로 적용된 ROWNUM 을 사용하고싶다면 <<ROW_NUMBER>> 를 사용해야한다.
 
 Ex)::
 
@@ -795,8 +804,111 @@ SELECT NVL(AGE,0) FROM MEMBERS;
 ----
 
 
+==== NVL2
+NVL 에서 조건을 하나더 확장한 NVL2
+
+[source, sql]
+----
+NVL(입력값,NOTNULL 대체값, NULL대체값)
+----
+
+==== NULLIF
+두 값이 같은 경우 NULL , 그렇지 않은 경우 첫 번째 값 반환
+NULLIF(값1, 값2)
+
+[source, sql]
+----
+SELECT NULLIF(AGE,19) FROM MEMBERs;
+----
+
+==== DECODE
+조건에 따른 값선택 하기 +
+
+DECODE(기준값, 
+        비교값, 출력값,
+        비교값, 출력값,
+        나머지)
+Ex)::
+[source, sql]
+----
+SELECT DECODE(GENDER,'남성',1,2) FROM MEMBERS;
+----
+
++
+
+[source, sql]
+----
+SELECT DECODE(SUBSTR(PHONE,1,3),
+                '011','SK',
+                '016','KT',
+                '기타') FROM MEMBERS;
+----
+
 
 === AGGREGATE
+
+`GROUP BY` 문에 사용 +
+
+MySQL과 다르게 group by에서 groupping된 컬럼 이아니면 호출할수가없다. +
+
+==== SUM
+==== MIN
+==== MAX
+==== COUNT
+==== AVG
+
+=== RANKING
+
+[#ROWNUMBER]
+==== ROW_NUMBER
+`ORDER_BY` 시에 생기는 문제점을 해결 하기위해 `ROW_NUMBER` 를 사용 + 
+일련번호를 붙힌다.
+
+[source, sql]
+.명령 규칙
+----
+ROW_NUMBER() OVER (PARTITION BY <그룹핑할 컬럼> ORDER BY <정렬할 컬럼> DESC)
+----
+
+PARTITION BY::
+**optional** +
+선택적으로 그룹핑할 컬럼을 지정
+
+ORDER BY::
+**required** +
+필수적으로 정렬할 컬럼을 넣어줘야한다. +
+설정시 전체 쿼리에 적용이된다.
+
+Ex)::
+[source, sql]
+----
+SELECT ROW_NUMBER() OVER (ORDER BY HIT), ID , TITLE FROM NOTICE;
+----
+
+
+
+==== RANK
+등수를 붙힌다. +
+값이 같으면 같은 등수로 나온다.
+
+Ex)::
+[source, sql]
+----
+SELECT RANK() OVER (ORDER BY HIT), ID , TITLE FROM NOTICE;
+----
+
+==== DENSE_RANK
+같은 등수가 있어도 다음 등수가 이웃하게 나오도록한다.
+
+Ex)::
+[source, sql]
+----
+SELECT DENSE_RANK() OVER (ORDER BY HIT), ID , TITLE FROM NOTICE;
+----
+
+=== JOIN
+
+==== SELF JOIN
 
 == DATA TYPE
 
