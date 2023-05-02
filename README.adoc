@@ -909,6 +909,243 @@ SELECT DENSE_RANK() OVER (ORDER BY HIT), ID , TITLE FROM NOTICE;
 === JOIN
 
 ==== SELF JOIN
+개념상으로 SELF JOIN 이라고한다.
+
+==== OLD JOIN
+이전버전에서는 OLD JOIN(Oracle join) 으로 해야할경우도있으니 알아두자 +
+
+[source, sql]
+.INNER JOIN (ANSI)
+----
+SELECT N.ID, N.TITLE, M.NAME 
+FROM 
+MEMBER M
+INNER JOIN NOTICE N ON M.ID = N.WRITER_ID
+WHERE M.ID = 'donggi';
+----
+
+[source, sql]
+.INNER JOIN (Oracle)
+----
+SELECT N.ID, N.TITLE, M.NAME 
+FROM MEMBER M, NOTICE N
+WHERE NOTICE M.ID = N.WRITER_ID AND M.ID = 'donggi';
+----
+. `ON` 을 사용하지않고 `WHERE`를 사용하기때문에 구분이 깔끔하지못하다. 
+
+[source, sql]
+.OUTER JOIN (ANSI)
+----
+SELECT N.*, M.NAME WRITER_NAME
+FROM NOTICE N LEFT OUTER JOIN MEMBER M ON M.ID = N.WRITER_ID;
+----
+
+[source, sql]
+.OUTER JOIN (Oracle)
+----
+SELECT N.*, M.NAME WRITER_NAME
+FROM NOTICE N, MEMBER M WHERE N.WRITER_ID = M.ID(+) ;
+----
+. `NULL` 값을 나타낼 테이블을 `(+)` 표시로 지정을 해줘야한다.
+ 
+IMPORTANT: **FULL OUTER JOIN** +
+OUTER JOIN 처럼 `(+)` 를 양 옆에 붙히면 에러가 발생한다. +
+이전 Oracle JOIN은 FULL OUTER JOIN 을 지원하지않는다.
+
+[source, sql]
+.CROSS JOIN (ANSI)
+----
+SELECT N.*, M.NAME WRITER_NAME
+FROM NOTICE N LEFT CROSS JOIN MEMBER M;
+----
+
+[source, sql]
+.CROSS JOIN (Oracle)
+----
+SELECT N.*, M.NAME WRITER_NAME
+FROM NOTICE N, MEMBER M;
+----
+
+=== UNION
+컬럼의 개수와 자료형만 맞추면 사용할수있다.
+
+==== UNION (default)
+중복 제거
+[source, sql]
+----
+SELECT ID, NAME FROM MEMBER 
+UNION
+SELECT WRITER_ID , TITLE FROM NOTICE
+----
+
+==== MINUS
+기준 `A` 와 `B` 테이블중 중복되는 내용이 있다면 제거하고 남은 기준 `A` 테이블의 레코드만 출력 +
+INTERSECT 와 반대의 결과 , 중복제거된 `A` 테이블만 출력
+[source, sql]
+----
+SELECT ID, NAME FROM MEMBER 
+MINUS
+SELECT WRITER_ID , TITLE FROM NOTICE
+----
+
+==== INTERSECT
+기준 `A` 와 `B` 테이블중 중복되는 내용이 있다면 해당 레코드만 출력 하고 중복되지 않은 `A` 레코드는 제거 + 
+MINUS 와 반대의 결과 , 중복만 출력
+[source, sql]
+----
+SELECT ID, NAME FROM MEMBER 
+INTERSECT
+SELECT WRITER_ID , TITLE FROM NOTICE
+----
+
+==== UNION ALL
+중복 상관없이 테이블 A, B 모두 출력
+[source, sql]
+----
+SELECT ID, NAME FROM MEMBER 
+UNION ALL
+SELECT WRITER_ID , TITLE FROM NOTICE
+----
+
+== VIEW
+
+[source, sql]
+----
+-- 쿼리문장을 VIEW로 정의해서 사용하기
+CREATE VIEW <VIEW_NAME>
+AS 
+SELECT ... FROM TABLE1
+LEFT JOIN TABLE2 ON TABLE1.ID = TABLE2.TB1_ID
+GROUP BY TABLE.ID
+....
+
+-- VIEW를 이용해 쿼리하기
+SELECT * FROM <VIEW_NAME>
+
+----
+
+한가지 테이블에 VIEW 를 사용?::
+. 출력해주고싶은 내용만 보여줄수가 있다.
+. VIEW로 사용자에게 제공을하면 ReadOnly 이기때문에 보안에 좋다.
+해당 내용을 적용한것이 아래의 DATA DICTIONARY 이다.
+
+=== DATA DICTIONARY
+
+Ex1):: DATA DICTIONARY에 저장되어있는 `VIEW` 목록들
+접두사 : `DBA_`, `ALL_`, `USER_` 기준이 되는 권한에 따른 사용자를 접두사로 넣을수있다. 
+. TABLES
+. TAB_COLUMNS
+. ALL_TABLES
+. TAB_COMMENTS
+. COL_COMMENTS + 
+...
+
+Ex2)::
+USER의 테이블 목록을 호출하는 VIEW
+
++
+
+[source, sql]
+----
+SELECT * FROM USER_TABLES;
+----
+
++
+
+[%autowidth]
+.result
+|===
+
+| TABLE_NAME | TABLESPACE_NAME | CLUSTER_NAME | ...
+
+| MEMBER
+| DONGGI TABLESPACE
+| (null)
+| ...
+
+| NOTICE
+| DONGGI TABLESPACE
+| (null)
+| ...
+
+| COMMENT
+| DONGGI TABLESPACE
+| (null)
+| ...
+
+| ...
+| ...
+| ...
+| ...
+
+
+|===
+
+Ex3)::
+테이블의 대한 컬럼을 호출
+
++
+
+[source, sql]
+----
+SELECT * FROM USER_TAB_COLUMNS;
+----
+
++
+
+[%autowidth]
+.result
+|===
+
+| TABLE_NAME | COLUMN_NAME | DATA_TYPE | ...
+
+| MEMBER
+| ID
+| NVARCHAR2
+| ...
+
+| MEMBER
+| PWD
+| NVARCHAR2
+| ...
+
+| MEMBER
+| NAME
+| NVARCHAR2
+| ...
+
+| NOTICE
+| ID
+| NUMBER
+| ...
+
+| NOTICE
+| TITLE
+| NVARCHAR2
+| ...
+
+| ...
+| ...
+| ...
+| ...
+
+
+|===
+
+
+[source, sql]
+.DATA DICTIONARY 목록 호출
+----
+SELECT * FROM DICT; 
+----
+
+.Data Dictionary 포함정보
+. 사용자 정보
+. 권한
+. 테이블/뷰/...
+. 함수/프로시저 
+. 등...
+
 
 == DATA TYPE
 
