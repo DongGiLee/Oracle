@@ -16,6 +16,7 @@ Access Program::
 .. ID : sys as sysdba
 .. PW : [PW]
 
+[#DB TOOL]
 . SQL Developer
 
 == Getting Started
@@ -171,6 +172,141 @@ SELECT name FROM v$pdbs;
 
 DUAL Table::
 값을 뽑아내야하지만 구문상 Table을 조회해야할경우 사용할수있는 임시 테이블, 더미테이블이다.
+
+=== CONSTRAINTS
+
+==== DOMAIN
+컬럼들 값의 유효한 범위를 만족한다면 +
+도메인을 만족한다라고 해석한다.
+
+.속성에 도메인이 아닌 값이 올 수 없도록 하는 제약조건
+. NOT NULL
+. DEFAULT
+.. FUNCTION 삽입가능
+. CHECK
+
++
+
+[source, sql]
+.테이블 생성할때 설정하는 방법
+----
+CREATE TABLE TEST
+(
+    ID      VARCHAR2(50)    NULL,
+    PHONE   VARCHAR2        CHECK(PHONE LIKE '010-%-____') NOT NULL,
+    EMAIL   VARCHAR2(500)   NULL
+)
+----
+
++
+
+[source, sql]
+.테이블 생성 한 후에 적용방법
+----
+ALTER TABLE TEST ADD CONSTRAINT CK_TEST_PHONE CHECK(PHONE LIKE '010-%-____');
+----
+
++
+
+[source, sql]
+.CHECK 설정후 INSERT
+----
+INSERT INTO TEST(ID, EMAIL, PHONE) VALUES('AA','A@A.COM','01111123-22');
+----
+
++
+
+.result
+----
+SQL 오류: ORA-02290: 체크 제약조건(HR.CK_TEST_PHONE)이 위배되었습니다.
+----
+
++
+
+CHECK 명명 규칙::
+CK(`CHECK`)_TEST(`TABLE`)_PHONE(`COLUMN`) 으로한다.
+
++
+
+[source, sql]
+.제약조건 삭제
+----
+ALTER TABLE TEST DROP CONSTRAINT CK_TEST_PHONE;
+----
+
++
+
+[source, sql]
+.생성후 제약조건 추가 (정규식)
+----
+ALTER TABLE TEST ADD CONSTRAINT CK_TEST_PHONE1 CHECK(REGEXP_LIKE(PHONE, '^01[01]-\d{3,4}-\d{4}'));
+----
+
+
+
+==== ENTITY
+테이블 전체로 범위로 확대한 제약조건
+
+PRIMARY KEY:: **중복된 레코드가 없도록 제한 (NULL 불허용)** +
+[source, sql]
+----
+CREATE TABLE NOTICE (
+    ID          NUMBER          PRIMARY KEY,
+    TITLE       VARCHAR2(300)   NOT NULL,
+    WRTIER_ID   VARCHAR2(50)    NOT NULL UNIQUE,
+    CONTENT     VARCHAR2(4000),
+    REGDATE     DATE            DEFAULT SYSDATE,
+    HIT         NUMBER          DEFAULT 0
+)
+----
+
+
+
+
+UNIQUE:: **중복된 레코드가 없도록 제한 (NULL 허용)** +
+[source, sql]
+----
+CREATE TABLE NOTICE (
+    ID          NUMBER          CONSTRAINT NOTICE_ID_PK PRIMARY KEY,
+    TITLE       VARCHAR2(300)   NOT NULL,
+    WRTIER_ID   VARCHAR2(50)    NOT NULL UNIQUE,
+    CONTENT     VARCHAR2(4000),
+    REGDATE     DATE            DEFAULT SYSDATE,
+    HIT         NUMBER          DEFAULT 0
+)
+----
+OR
+[source, sql]
+.주로 사용하는 방법, 몰아서씀
+----
+CREATE TABLE NOTICE (
+    ID          NUMBER,
+    TITLE       VARCHAR2(300)   NOT NULL,
+    WRITER_ID   VARCHAR2(50)    NOT NULL,
+    CONTENT     VARCHAR2(4000),
+    REGDATE     DATE            DEFAULT SYSDATE,
+    HIT         NUMBER          DEFAULT 0,
+
+    CONSTRAINT NOTICE_ID_PK PRIMARY KEY(ID),
+    CONSTRAINT NOTICE_WRITER_ID_UK UNIQUE(WRITER_ID)
+)
+----
+
+SEQUENCE::
+[source, sql]
+.1부터 시작, 증분 1
+----
+CREATE SEQUENCE NOTICE_ID_SEQ INCREMENT BY 1 START WITH 1;
+----
+
+
+[source, sql]
+.다음 SEQUENCE 번호 조회
+----
+SELECT NOTICE_ID_SEQ.NEXTVAL FROM DUAL; -- 이걸 계속입력하면 계속증가한다.
+----
+
+==== RELATION
 
 
 == Query
@@ -1146,6 +1282,8 @@ SELECT * FROM DICT;
 . 함수/프로시저 
 . 등...
 
+NOTE: DATA DICTIONARY 의 기능들은 거의 <<DB TOOL>>을 사용하면 다해결할수있다. +
+직접 DATA DICTIONARY를 조회하여 비쥬얼라이징을 할때외에는 별로 사용할 일이없을것이다.
 
 == DATA TYPE
 
