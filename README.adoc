@@ -29,6 +29,7 @@ Access Program::
 [source,bash]
 ----
 sqlplus sys as sysdba
+sqlplus id/pw@ip:port/sid #원격접속
 ----
 
 +
@@ -301,7 +302,7 @@ CREATE SEQUENCE NOTICE_ID_SEQ INCREMENT BY 1 START WITH 1;
 
 
 [source, sql]
-.다음 SEQUENCE 번호 조회
+.*NEXTAVL*, 다음 SEQUENCE 번호 조회
 ----
 SELECT NOTICE_ID_SEQ.NEXTVAL FROM DUAL; -- 이걸 계속입력하면 계속증가한다.
 ----
@@ -428,6 +429,33 @@ UPDATE <테이블> SET col=new_val [, ...] WHERE col=origin_val;
 DELETE <테이블> WHERE col=val;
 ----
 
+==== MERGE
+**조건에 따른 DML**
+
+. `NOT MATCH` 없이 `MATCH` 만사용할수도있다. (if ... else 처럼)
+. `ON` 조건절에 사용된 컬럼은 `UPDATE` 가 불가능하다. (되도록 PK로만 비교하도록)
+. `DELETE` 절 지원이 10g 이상부터 원활하게 되니 최소사양 10g로ㄱㄱ
+Ex::
+
++
+
+[source,sql]
+----
+MERGE INTO [TABLE | VIEW] -- UPDATE or INSERT 할 table or view
+    USING [TABLE | VIEW | DUAL] -- 비교할 대상 table or view or dual(위 테이블과 동일할경우 DUAL)
+    ON [조건] -- UPDATE 와 INSERT 처리할 조건문 (조건문이 일치하면 UPDATE / 불일치시 INSERT)
+    WHEN MATCHED THEN
+        UPDATE SET
+        [COLUMN1] = [VALUE1],
+        [COLUMN2] = [VALUE2],
+        ...
+        -- (DELETE [TABLE] WHERE [COLUMN1] = [VALUE1] AND ... ) DELETE도 사용가능
+    WHEN NOT MATCHED THEN
+        INSERT (COLUMN1, COLUMN2, ...)
+        VALUES (VALUE1, VALUE2, ...)
+----
+
+
 === DCL
     Data Control Language
     데이터를 사용할수 있는 권한
@@ -527,7 +555,7 @@ CONNECT BY PRIOR CHILD_COLUMN = PARENT_COLUMN; -- 부모와 자식노드들간�
 
 
 ==== START WITH 조건
-root노드를 식별한다. 조건을 만족하는 모든 ROW들ㅇ느 루트 노드가된다.
+root노드를 식별한다. 조건을 만족하는 모든 ROW들은 루트 노드가된다.
 
 
 * `START WITH` 절을 생략할수도있다. 이런경우는 모든 ROW들을 root노드로 간주한다.
